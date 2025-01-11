@@ -1,5 +1,6 @@
 #--Task 1------------------------------------------
 # Importing libraries needed for the analysis
+
 library(readr)
 library(dplyr)
 library(ggplot2)
@@ -7,26 +8,31 @@ library(lubridate)
 library(zoo)
 
 # ------Read GeoHealth Data and Addis Ababa 2018 csv files-----------
+
 geohealth_data <- read_csv("GeoHealth_Data.csv")
 addis_ababa_2018 <- read_csv("addis_ababa_2018_pm2.csv")
 
 #---Task 2----Data Cleaning----------
 #---------Hourly Aggregate_-------------
 # Convert the 'Date (LT)' column to a proper date-time format
+
 addis_ababa_2018 <- addis_ababa_2018 %>%
   mutate(`Date (LT)` = ymd_h(paste(Year, Month, Day, Hour, sep = "-"))
   )
 
-# Replace -999 with NA for proper imputation
+# Replace -999 with NA for proper imputation ------------------
+
 addis_ababa_2018$`Raw Conc.`[addis_ababa_2018$`Raw Conc.` == -999] <- NA
 
-# Perform the hourly aggregation with imputation
+# Perform the hourly aggregation with imputation --------------------------
+
 addis_hourly_clean <- addis_ababa_2018 %>%
   mutate(hour = floor_date(`Date (LT)`, "hour")) %>%
   group_by(hour) %>%
   summarise(ConcHR = mean(`Raw Conc.`, na.rm = TRUE))
 
-# Convert the 'Time' column in geohealth_data to a proper date-time format with the year 2018
+# Convert the 'Time' column in geohealth data to a proper date-time format with the year 2018
+
 geohealth_data <- geohealth_data %>%
   mutate(Time = ymd_hms(paste("2018", Month, DD, hr, "00", "00", sep = "-")))
 
@@ -145,5 +151,35 @@ ggplot(addis_daily_clean, aes(x = AirQuality, fill = AirQuality)) +
 
 
 #------ Task 10: T - test ------------------------------
+
 t_test_result <- t.test(geohealth_daily_clean$ConcHR, addis_daily_clean$ConcHR)
 print(t_test_result)
+
+# --- Task 11: Rolling Average and Distribution Visualization ---
+
+# Calculate 7-day rolling average for both datasets
+geohealth_daily_clean <- geohealth_daily_clean %>%
+  mutate(RollingAvg = zoo::rollmean(ConcHR, k = 7, fill = NA, align = "right"))
+
+addis_daily_clean <- addis_daily_clean %>%
+  mutate(RollingAvg = zoo::rollmean(ConcHR, k = 7, fill = NA, align = "right"))
+
+# Plot the rolling average for both datasets
+ggplot() +
+  geom_line(data = geohealth_daily_clean, aes(x = date, y = RollingAvg, color = "GeoHealth"), size = 1) +
+  geom_line(data = addis_daily_clean, aes(x = date, y = RollingAvg, color = "Addis Ababa"), size = 1) +
+  labs(title = "7-Day Rolling Average of PM2.5 Concentration",
+       x = "Date", y = "PM2.5 Concentration (µg/m³)", color = "Source") +
+  theme_minimal()
+
+# Boxplot Comparison
+combined_daily_data <- bind_rows(
+  mutate(geohealth_daily_clean, Source = "GeoHealth"),
+  mutate(addis_daily_clean, Source = "Addis Ababa")
+)
+
+ggplot(combined_daily_data, aes(x = Source, y = ConcHR, fill = Source)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of PM2.5 Concentration by Source",
+       x = "Data Source", y = "PM2.5 Concentration (µg/m³)") +
+  theme_minimal()
