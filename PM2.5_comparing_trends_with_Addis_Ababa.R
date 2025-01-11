@@ -1,5 +1,6 @@
 #--Task 1------------------------------------------
 # Importing libraries needed for the analysis
+
 library(readr)
 library(dplyr)
 library(ggplot2)
@@ -7,26 +8,31 @@ library(lubridate)
 library(zoo)
 
 # ------Read GeoHealth Data and Addis Ababa 2018 csv files-----------
+
 geohealth_data <- read_csv("GeoHealth_Data.csv")
 addis_ababa_2018 <- read_csv("addis_ababa_2018_pm2.csv")
 
 #---Task 2----Data Cleaning----------
 #---------Hourly Aggregate_-------------
 # Convert the 'Date (LT)' column to a proper date-time format
+
 addis_ababa_2018 <- addis_ababa_2018 %>%
   mutate(`Date (LT)` = ymd_h(paste(Year, Month, Day, Hour, sep = "-"))
   )
 
-# Replace -999 with NA for proper imputation
+# Replace -999 with NA for proper imputation ------------------
+
 addis_ababa_2018$`Raw Conc.`[addis_ababa_2018$`Raw Conc.` == -999] <- NA
 
-# Perform the hourly aggregation with imputation
+# Perform the hourly aggregation with imputation --------------------------
+
 addis_hourly_clean <- addis_ababa_2018 %>%
   mutate(hour = floor_date(`Date (LT)`, "hour")) %>%
   group_by(hour) %>%
   summarise(ConcHR = mean(`Raw Conc.`, na.rm = TRUE))
 
-# Convert the 'Time' column in geohealth_data to a proper date-time format with the year 2018
+# Convert the 'Time' column in geohealth data to a proper date-time format with the year 2018
+
 geohealth_data <- geohealth_data %>%
   mutate(Time = ymd_hms(paste("2018", Month, DD, hr, "00", "00", sep = "-")))
 
@@ -40,6 +46,7 @@ geohealth_hourly_clean <- geohealth_data %>%
   summarise(ConcHR = mean(`ConcHR(ug/m3)`, na.rm = TRUE))
 
 # --- Task 3: Daily Aggregation ---
+
 geohealth_daily_clean <- geohealth_hourly_clean %>%
   mutate(date = as.Date(hour)) %>%
   filter(ConcHR <= 1000) %>%
@@ -53,6 +60,7 @@ addis_daily_clean <- addis_hourly_clean %>%
   summarise(ConcHR = mean(ConcHR, na.rm = TRUE))
 
 # --- Task 4: Plot Daily Line Charts Separately ---
+
 ggplot(geohealth_daily_clean, aes(x = date, y = ConcHR)) +
   geom_line(color = "blue") +
   labs(title = "Daily PM2.5 Concentration - GeoHealth Data", x = "Date", y = "PM2.5 Concentration (ug/m3)") +
@@ -66,6 +74,7 @@ ggplot(addis_daily_clean, aes(x = date, y = ConcHR)) +
   theme_minimal()
 
 # --- Task 5: Combine GeoHealth and Addis Ababa Daily Data for Comparison ---
+
 combined_daily_data <- bind_rows(
   mutate(geohealth_daily_clean, Source = "GeoHealth"),
   mutate(addis_daily_clean, Source = "Addis Ababa")
@@ -79,6 +88,7 @@ ggplot(combined_daily_data, aes(x = date, y = ConcHR, color = Source)) +
   theme(legend.position = "top")
 
 # --- Task 6: Classify PM2.5 Levels Based on WHO Air Quality Guidelines ---
+
 classify_pm25 <- function(conc) {
   if (conc <= 12) {
     return("Good")
@@ -112,14 +122,16 @@ ggplot(addis_daily_clean, aes(x = date, y = ConcHR, color = AirQuality)) +
   scale_x_date(date_labels = "%b %d", date_breaks = "1 week") +
   theme_minimal()
 
-# --- Task 8: PM2.5 Trend with Rolling Average ---
+# --- Task 8: PM2.5 Trend with Rolling Average -------------------------
+
 geohealth_daily_clean <- geohealth_daily_clean %>%
   mutate(Rolling_Avg = rollmean(ConcHR, k = 7, fill = NA, align = "right"))
 
 addis_daily_clean <- addis_daily_clean %>%
   mutate(Rolling_Avg = rollmean(ConcHR, k = 7, fill = NA, align = "right"))
 
-# Plot with rolling average
+# Plot with rolling average--------------------------------------------------
+
 ggplot(geohealth_daily_clean, aes(x = date)) +
   geom_line(aes(y = ConcHR), color = "blue", alpha = 0.5) +
   geom_line(aes(y = Rolling_Avg), color = "darkblue")
@@ -131,13 +143,15 @@ ggplot(addis_daily_clean, aes(x = date)) +
 
 # --- Task 9: Bar Chart Visualization for Air Quality ---
 
-# GeoHealth Air Quality Bar Chart
+# GeoHealth Air Quality Bar Chart -------------------------------------------
+
 ggplot(geohealth_daily_clean, aes(x = AirQuality, fill = AirQuality)) +
   geom_bar() +
   labs(title = "Frequency of Air Quality Levels - GeoHealth", x = "Air Quality Category", y = "Count") +
   theme_minimal()
 
-# Addis Ababa Air Quality Bar Chart
+# Addis Ababa Air Quality Bar Chart -----------------------------------------
+
 ggplot(addis_daily_clean, aes(x = AirQuality, fill = AirQuality)) +
   geom_bar() +
   labs(title = "Frequency of Air Quality Levels - Addis Ababa", x = "Air Quality Category", y = "Count") +
@@ -145,5 +159,38 @@ ggplot(addis_daily_clean, aes(x = AirQuality, fill = AirQuality)) +
 
 
 #------ Task 10: T - test ------------------------------
+
 t_test_result <- t.test(geohealth_daily_clean$ConcHR, addis_daily_clean$ConcHR)
 print(t_test_result)
+
+# --- Task 11: Rolling Average and Distribution Visualization ---
+
+# Calculate 7-day rolling average for both datasets ---------------------------
+
+geohealth_daily_clean <- geohealth_daily_clean %>%
+  mutate(RollingAvg = zoo::rollmean(ConcHR, k = 7, fill = NA, align = "right"))
+
+addis_daily_clean <- addis_daily_clean %>%
+  mutate(RollingAvg = zoo::rollmean(ConcHR, k = 7, fill = NA, align = "right"))
+
+# Plot the rolling average for both datasets-------------------------------------
+
+ggplot() +
+  geom_line(data = geohealth_daily_clean, aes(x = date, y = RollingAvg, color = "GeoHealth"), size = 1) +
+  geom_line(data = addis_daily_clean, aes(x = date, y = RollingAvg, color = "Addis Ababa"), size = 1) +
+  labs(title = "7-Day Rolling Average of PM2.5 Concentration",
+       x = "Date", y = "PM2.5 Concentration (µg/m³)", color = "Source") +
+  theme_minimal()
+
+# Boxplot Comparison -------------------------------------------------------
+
+combined_daily_data <- bind_rows(
+  mutate(geohealth_daily_clean, Source = "GeoHealth"),
+  mutate(addis_daily_clean, Source = "Addis Ababa")
+)
+
+ggplot(combined_daily_data, aes(x = Source, y = ConcHR, fill = Source)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of PM2.5 Concentration by Source",
+       x = "Data Source", y = "PM2.5 Concentration (µg/m³)") +
+  theme_minimal()
