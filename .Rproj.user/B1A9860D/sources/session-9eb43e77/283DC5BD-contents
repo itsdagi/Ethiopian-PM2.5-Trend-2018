@@ -194,3 +194,53 @@ ggplot(combined_daily_data, aes(x = Source, y = ConcHR, fill = Source)) +
   labs(title = "Boxplot of PM2.5 Concentration by Source",
        x = "Data Source", y = "PM2.5 Concentration (µg/m³)") +
   theme_minimal()
+
+# --- Task 12: Mann-Whitney U Test and Trend Decomposition ---
+
+# Mann-Whitney U Test (Non-parametric test for comparing two independent datasets)
+mann_whitney_test <- wilcox.test(geohealth_daily_clean$ConcHR, addis_daily_clean$ConcHR)
+
+# Print Mann-Whitney Test Results
+print(mann_whitney_test)
+
+# --- Task 13: Visualize Monthly PM2.5 Concentration in Histograms for GeoHealth and Addis Ababa ---
+
+
+# GeoHealth: Aggregating data by month and calculating monthly average concentration
+geohealth_monthly_clean <- geohealth_daily_clean %>%
+  mutate(month = format(date, "%Y-%m")) %>%
+  group_by(month) %>%
+  summarise(ConcHR = mean(ConcHR, na.rm = TRUE))
+
+# Addis Ababa: Aggregating data by month and calculating monthly average concentration
+addis_monthly_clean <- addis_daily_clean %>%
+  mutate(month = format(date, "%Y-%m")) %>%
+  group_by(month) %>%
+  summarise(ConcHR = mean(ConcHR, na.rm = TRUE))
+
+# ------------------------------ GeoHealth Monthly Histogram ----------------------------
+ggplot(geohealth_monthly_clean, aes(x = ConcHR)) +
+  geom_histogram(binwidth = 5, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Monthly PM2.5 Concentration Distribution - GeoHealth", 
+       x = "PM2.5 Concentration (ug/m3)", 
+       y = "Frequency") +
+  scale_x_continuous(breaks = seq(min(geohealth_monthly_clean$ConcHR), 
+                                  max(geohealth_monthly_clean$ConcHR), 
+                                  by = 5)) +
+  theme_minimal() +
+  facet_wrap(~month, scales = "free_x") +  # Add separate panels for each month
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate month labels for better readability
+
+# -------------------- Addis Ababa Monthly Histogram ---------------------------------------
+
+ggplot(addis_monthly_clean, aes(x = ConcHR)) +
+  geom_histogram(binwidth = 5, fill = "red", color = "black", alpha = 0.7) +
+  labs(title = "Monthly PM2.5 Concentration Distribution - Addis Ababa", 
+       x = "PM2.5 Concentration (ug/m3)", 
+       y = "Frequency") +
+  scale_x_continuous(breaks = seq(min(addis_monthly_clean$ConcHR), 
+                                  max(addis_monthly_clean$ConcHR), 
+                                  by = 5)) +
+  theme_minimal() +
+  facet_wrap(~month, scales = "free_x") +  # Add separate panels for each month
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate month labels for better readability
