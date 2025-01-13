@@ -206,7 +206,7 @@ print(mann_whitney_test)
 # --- Task 13: Visualize Monthly PM2.5 Concentration in Histograms for GeoHealth and Addis Ababa ---
 
 
-# GeoHealth: Aggregating data by month and calculating monthly average concentration
+# Geo-Health USA 2018: Aggregating data by month and calculating monthly average concentration
 geohealth_monthly_clean <- geohealth_daily_clean %>%
   mutate(month = format(date, "%Y-%m")) %>%
   group_by(month) %>%
@@ -221,7 +221,7 @@ addis_monthly_clean <- addis_daily_clean %>%
 # ------------------------------ GeoHealth Monthly Histogram ----------------------------
 ggplot(geohealth_monthly_clean, aes(x = ConcHR)) +
   geom_histogram(binwidth = 5, fill = "blue", color = "black", alpha = 0.7) +
-  labs(title = "Monthly PM2.5 Concentration Distribution - GeoHealth", 
+  labs(title = "Monthly PM2.5 Concentration Distribution - USA(2018) ", 
        x = "PM2.5 Concentration (ug/m3)", 
        y = "Frequency") +
   scale_x_continuous(breaks = seq(min(geohealth_monthly_clean$ConcHR), 
