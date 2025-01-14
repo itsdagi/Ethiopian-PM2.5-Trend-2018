@@ -212,7 +212,9 @@ geohealth_monthly_clean <- geohealth_daily_clean %>%
   group_by(month) %>%
   summarise(ConcHR = mean(ConcHR, na.rm = TRUE))
 
-# Addis Ababa: Aggregating data by month and calculating monthly average concentration
+# Addis Ababa: Aggregating data by month and calculating monthly average concentration of 
+# Addis Ababa and USA geohealth data.
+
 addis_monthly_clean <- addis_daily_clean %>%
   mutate(month = format(date, "%Y-%m")) %>%
   group_by(month) %>%
@@ -231,11 +233,11 @@ ggplot(geohealth_monthly_clean, aes(x = ConcHR)) +
   facet_wrap(~month, scales = "free_x") +  # Add separate panels for each month
   theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate month labels for better readability
 
-# -------------------- Addis Ababa Monthly Histogram ---------------------------------------
+# -------------------- Addis Ababa Monthly Histogram for the year 2018---------------------------------------
 
 ggplot(addis_monthly_clean, aes(x = ConcHR)) +
   geom_histogram(binwidth = 5, fill = "red", color = "black", alpha = 0.7) +
-  labs(title = "Monthly PM2.5 Concentration Distribution - Addis Ababa", 
+  labs(title = "Monthly PM2.5 Concentration Distribution - Addis Ababa central (2018)", 
        x = "PM2.5 Concentration (ug/m3)", 
        y = "Frequency") +
   scale_x_continuous(breaks = seq(min(addis_monthly_clean$ConcHR), 
